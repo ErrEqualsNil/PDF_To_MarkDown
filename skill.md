@@ -13,10 +13,7 @@ Try **MinerU** first. If it fails, fall back to **pymupdf4llm + repair**.
 
 ## Errors
 
-- Analyze the error message.
-- If any config error, prompt user to configure interactively.
-- Otherwise, print the error message and exit.
-
+- follow the sub-skill instructions to analyze and fix the errors.
 
 ## Sub-skills
 
