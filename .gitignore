@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Output directories
+*_parsed/
+*_repaired.md
+repair_test/
+*_test_out/
+mineru_output/
+
+# Config with secrets
+**/config.json
+
+# IDE
+.vscode/
+.idea/
+
+CLAUDE.md
+pyproject.toml
+.claude
