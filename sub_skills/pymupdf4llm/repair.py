@@ -228,11 +228,16 @@ def repair(
     cfg      = load_config()
     key      = api_key  or cfg.get("llm_api_key", "")
     base_url = base_url or cfg.get("llm_base_url", "") or None
-    model    = model    or cfg.get("llm_model", "") or "claude-3-5-haiku-20241022"
+    model    = model    or cfg.get("llm_model", "")
     if not key:
         raise ValueError(
-            "未找到 LLM API Key，请在 config.json 中设置 llm_api_key，"
-            "或通过环境变量 LLM_API_KEY 传入。"
+            "[pymupdf4llm] llm_api_key is missing. "
+            "Add it to config.json or set the LLM_API_KEY environment variable."
+        )
+    if not model:
+        raise ValueError(
+            "[pymupdf4llm] llm_model is missing. "
+            "Add it to config.json or set the LLM_MODEL environment variable."
         )
 
     client = anthropic.Anthropic(api_key=key, base_url=base_url)

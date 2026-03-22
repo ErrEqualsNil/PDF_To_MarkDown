@@ -7,48 +7,36 @@ from pathlib import Path
 _CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
-def _prompt(label: str, secret: bool = False) -> str:
-    if secret:
-        try:
-            import getpass
-            return getpass.getpass(f"  {label}: ").strip()
-        except Exception:
-            pass
-    return input(f"  {label}: ").strip()
-
-
-def ensure_config() -> None:
-    if _CONFIG_PATH.exists():
-        return
-
-    print("[mineru] config.json 不存在，请填写以下配置：")
-    print()
-
-    mineru_api_key = _prompt("MinerU API Key", secret=True)
-
-    cfg = {
-        "mineru_api_key":  mineru_api_key,
-        "mineru_base_url": "https://mineru.net/api/v4",
-    }
-
-    _CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n[mineru] 配置已保存至 {_CONFIG_PATH}\n")
-
-
 def load_config() -> dict:
-    ensure_config()
+    """Load config from file, then override with environment variables.
 
+    Raises:
+        FileNotFoundError: if config.json is missing and MINERU_API_KEY env var is not set.
+        KeyError: if mineru_api_key is missing from config.
+    """
     cfg: dict = {}
+
     if _CONFIG_PATH.exists():
         cfg = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
 
     env_map = {
-        "MINERU_API_KEY":      "mineru_api_key",
-        "MINERU_BASE_URL":     "mineru_base_url",
+        "MINERU_API_KEY":  "mineru_api_key",
+        "MINERU_BASE_URL": "mineru_base_url",
     }
     for env_key, cfg_key in env_map.items():
         val = os.environ.get(env_key)
         if val:
             cfg[cfg_key] = val
+
+    if not cfg:
+        raise FileNotFoundError(
+            f"[mineru] config.json not found at {_CONFIG_PATH}. "
+            "Create it with mineru_api_key, or set the MINERU_API_KEY environment variable."
+        )
+    if not cfg.get("mineru_api_key"):
+        raise KeyError(
+            "[mineru] mineru_api_key is missing. "
+            f"Add it to {_CONFIG_PATH} or set the MINERU_API_KEY environment variable."
+        )
 
     return cfg

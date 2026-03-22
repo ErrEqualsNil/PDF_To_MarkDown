@@ -17,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-from pdf_skill.models import ParseResult
+from .models import ParseResult
 
 _POLL_INTERVAL = 5    # seconds
 _POLL_TIMEOUT  = 600  # seconds
@@ -34,6 +34,7 @@ class MinerUParser:
     # ── public ────────────────────────────────────────────────────────────────
 
     def parse(self, pdf_path: Path, out_dir: Path) -> ParseResult:
+        out_dir.mkdir(parents=True, exist_ok=True)
         batch_id, signed_url = self._get_upload_url(pdf_path.name)
         self._upload(pdf_path, signed_url)
         self._submit(batch_id, signed_url)
@@ -114,10 +115,19 @@ class MinerUParser:
         with zipfile.ZipFile(zip_path) as z:
             z.extractall(out_dir)
 
-        # Locate outputs
-        md_files  = list(out_dir.rglob("*.md"))
-        img_files = [f for ext in ("*.jpg", "*.png", "*.jpeg")
-                     for f in out_dir.rglob(ext)]
+        # Locate and rename markdown
+        md_files = list(out_dir.rglob("*.md"))
+        if md_files:
+            target = out_dir / f"{file_name}.md"
+            md_files[0].rename(target)
+            markdown = target.read_text(encoding="utf-8")
+        else:
+            markdown = ""
 
-        markdown = md_files[0].read_text(encoding="utf-8") if md_files else ""
-        return ParseResult(markdown=markdown, images=img_files, out_dir=out_dir)
+        # Remove everything except the renamed .md file
+        import shutil
+        for path in out_dir.iterdir():
+            if path != target:
+                shutil.rmtree(path) if path.is_dir() else path.unlink()
+
+        return ParseResult(markdown=markdown, out_dir=out_dir)

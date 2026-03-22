@@ -7,9 +7,7 @@ description: Parse a PDF via the MinerU API into structured Markdown (formulas, 
 
 ## Configuration
 
-Requires `mineru_api_key` in `sub_skills/mineru/config.json`.
-
-To set up manually, create `sub_skills/mineru/config.json`:
+Requires `mineru_api_key` in `sub_skills/mineru/config.json`:
 
 ```json
 {
@@ -23,8 +21,7 @@ To set up manually, create `sub_skills/mineru/config.json`:
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `pdf_path` | required | Path to the PDF file to parse |
-| `out_dir` | required | Directory to save the output, same as PDF name |
-| `timeout` | 120 seconds | Maximum time to wait for the API response |
+| `out_dir` | required | Directory to save the output |
 
 
 ## Usage
