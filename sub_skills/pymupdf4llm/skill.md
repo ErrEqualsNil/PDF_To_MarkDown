@@ -1,56 +1,100 @@
 ---
 name: pdf-pymupdf4llm
-description: 本地 PDF 解析（pymupdf4llm）+ 双栏学术论文 LLM 结构修复
+description: Local PDF parsing (pymupdf4llm) + LLM structural repair for double-column papers
 ---
 
-## 解析
+## Parsing
 
-无需网络，本地直接解析。
+No network required. Parses locally and writes `full.md` to the output directory.
 
 ```python
 from sub_skills.pymupdf4llm import FallbackParser
 from pathlib import Path
 
 result = FallbackParser().parse(Path("<pdf_path>"), Path("<out_dir>"))
-# result.markdown  — 原始 Markdown
-# result.images    — 提取的图片文件
-# result.out_dir   — 输出目录（含 full.md、images/）
+# result.markdown  — raw Markdown
+# result.images    — extracted image files
+# result.out_dir   — output directory (full.md, images/)
 ```
 
-双栏排版的学术论文会产生结构问题（标题空格、断词、乱序、脚注混入等），建议解析后执行修复。
+Double-column academic papers often produce structural artifacts (garbled headings, merged words, scrambled reading order, stray footnotes). Run repair after parsing when these appear.
 
-## 修复
+## Repair
 
-`config.json` 中须配置 `llm_api_key` 和 `llm_base_url`（支持任何兼容 Anthropic Messages API 的服务）。
+### Configuration
+
+Requires `llm_api_key` and `llm_base_url` in `sub_skills/pymupdf4llm/config.json`. Any service compatible with the Anthropic Messages API is supported.
+
+**If `config.json` is missing**, it is created automatically on first use — the user will be prompted:
+
+```
+[pymupdf4llm] config.json not found. Please enter the following:
+
+LLM configuration (any Anthropic Messages API-compatible service):
+  LLM API Key: <hidden input>
+  LLM Base URL (e.g. https://api.minimaxi.com/anthropic):
+  LLM model name, e.g. MiniMax-M2.7 / claude-3-5-haiku-20241022 (optional):
+```
+
+To set up manually, create `sub_skills/pymupdf4llm/config.json`:
+
+```json
+{
+  "llm_api_key": "<your LLM API key>",
+  "llm_base_url": "<Anthropic-compatible endpoint>",
+  "llm_model": "<model name>"
+}
+```
+
+Environment variables override config file values:
+
+| Env var | Config key |
+|---------|-----------|
+| `LLM_API_KEY` | `llm_api_key` |
+| `LLM_BASE_URL` | `llm_base_url` |
+| `LLM_MODEL` | `llm_model` |
+| `ANTHROPIC_API_KEY` | `llm_api_key` |
+| `ANTHROPIC_BASE_URL` | `llm_base_url` |
+
+### Usage
 
 ```python
 from sub_skills.pymupdf4llm import repair, repair_file
 
-# 修复字符串
+# repair a Markdown string
 fixed_md = repair(raw_markdown, verbose=True)
 
-# 修复文件，输出为 <stem>_repaired.md（同目录）
+# repair a file — writes <stem>_repaired.md alongside the original
 out_path = repair_file("output/full.md", verbose=True)
 ```
 
-### 详细设计
+### What repair fixes
 
-仅在错误排查时，参考 `pdf_repair.md`。
+| Issue | Method |
+|-------|--------|
+| Spaces injected into headings (`II. T HE`) | LLM rebuilds (`## II. The ...`) |
+| Merged words from column breaks (`domainspecific`) | LLM restores (`domain-specific`) |
+| Scrambled double-column reading order | LLM reorders |
+| Footnotes / author / affiliation lines | LLM removes |
+| Caption fragment leftovers | Rule-based pre-processing |
+| Soft line breaks within paragraphs | Rule-based pre-processing |
+| Isolated formula fragments | LLM wraps in ` ```math ``` ` |
+| Sentences split across chunk boundaries | Rule-based seam stitching |
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `api_key` | config.json | LLM API Key |
-| `base_url` | config.json | LLM Base URL |
-| `model` | config.json / `claude-3-5-haiku-20241022` | LLM 模型 |
-| `max_chars_per_chunk` | `3000` | 每次调用最大字符数 |
-| `seam_context` | `2` | 边界拼接时每侧取的段落数 |
-| `max_workers` | `4` | 并发线程数 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `api_key` | config.json | LLM API key |
+| `base_url` | config.json | LLM base URL |
+| `model` | config.json / `claude-3-5-haiku-20241022` | LLM model name |
+| `max_chars_per_chunk` | `3000` | Max characters per LLM call |
+| `seam_context` | `2` | Paragraphs inspected at each chunk boundary |
+| `max_workers` | `4` | Concurrent threads |
 
-详细设计见 `pdf_repair.md`。
+For design details see `pdf_repair.md`.
 
-## 错误处理
+## Errors
 
-- API Key 缺失 → 抛出异常，提示用户配置 API Key
-- 网络超时 / 解析失败 → 抛出异常，提示用户相关错误
+- Missing API key → raises `ValueError`; configure `llm_api_key` and retry
+- Network / LLM error → raises exception with the server message

@@ -1,18 +1,37 @@
 ---
 name: pdf
-description: 将 PDF 解析为 Markdown，供 Agent/LLM 消费
+description: Parse a PDF into Markdown for Agent/LLM consumption
 ---
 
-解析用户指定的 PDF 文件为结构化 Markdown。
+Parse a user-specified PDF into structured Markdown.
 
 ## Sub-skills
 
-- **MinerU 解析**：详见 `sub_skills/mineru/skill.md`
-- **pymupdf4llm 解析 + 修复**：详见 `sub_skills/pymupdf4llm/skill.md`
+- **MinerU** — cloud-based, high-quality parsing with formulas, tables, and images → `sub_skills/mineru/skill.md`
+- **pymupdf4llm + repair** — local parsing with LLM-based structural repair for double-column papers → `sub_skills/pymupdf4llm/skill.md`
 
-## 解析策略
+## Parsing Strategy
 
-优先使用 **MinerU 解析**
+1. Try **MinerU** first. If `mineru_api_key` is not configured or the API call fails, fall back to **pymupdf4llm**.
+2. After pymupdf4llm parsing, inspect the output. If the paper is double-column and shows structural artifacts (garbled headings, merged words, scrambled order, stray footnotes), run **repair**.
 
-错误回退 **pymupdf4llm 解析 + 修复**
+## Configuration Setup
 
+Each sub_skill manages its own `config.json`. On first use, missing config is detected automatically and the user is prompted interactively. To set up manually:
+
+**MinerU** — create `sub_skills/mineru/config.json`:
+```json
+{
+  "mineru_api_key": "<your MinerU API key>",
+  "mineru_base_url": "https://mineru.net/api/v4"
+}
+```
+
+**pymupdf4llm repair** — create `sub_skills/pymupdf4llm/config.json`:
+```json
+{
+  "llm_api_key": "<your LLM API key>",
+  "llm_base_url": "<Anthropic-compatible endpoint>",
+  "llm_model": "<model name>"
+}
+```
