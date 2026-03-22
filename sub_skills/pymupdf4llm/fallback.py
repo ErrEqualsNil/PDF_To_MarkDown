@@ -21,7 +21,7 @@ class FallbackParser:
         pages  = len(doc)
         doc.close()
 
-        md_path = out_dir / "full.md"
+        md_path = out_dir / pdf_path.name.replace(pdf_path.suffix, ".md")
         md_path.write_text(md_text, encoding="utf-8")
 
         img_files = list((out_dir / "images").rglob("*"))

@@ -17,7 +17,7 @@ from pathlib import Path
 
 import requests
 
-from .models import ParseResult
+from pdf_skill.models import ParseResult
 
 _POLL_INTERVAL = 5    # seconds
 _POLL_TIMEOUT  = 600  # seconds
@@ -38,7 +38,7 @@ class MinerUParser:
         self._upload(pdf_path, signed_url)
         self._submit(batch_id, signed_url)
         item = self._poll(batch_id)
-        return self._download_and_build(item, out_dir)
+        return self._download_and_build(item, out_dir, pdf_path.stem)
 
     # ── private ───────────────────────────────────────────────────────────────
 
@@ -103,12 +103,12 @@ class MinerUParser:
                 raise RuntimeError(f"Extraction failed: {item.get('err_msg')}")
         raise TimeoutError("MinerU timed out")
 
-    def _download_and_build(self, item: dict, out_dir: Path) -> ParseResult:
+    def _download_and_build(self, item: dict, out_dir: Path, file_name: str) -> ParseResult:
         zip_url = item["full_zip_url"]
         r = requests.get(zip_url, timeout=120)
         r.raise_for_status()
 
-        zip_path = out_dir / "result.zip"
+        zip_path = out_dir / f"{file_name}.zip"
         zip_path.write_bytes(r.content)
 
         with zipfile.ZipFile(zip_path) as z:
