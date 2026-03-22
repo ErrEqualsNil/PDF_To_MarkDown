@@ -87,6 +87,42 @@ Repair parameters:
 | `seam_context` | `2` | Paragraphs to inspect at chunk boundaries |
 | `max_workers` | `4` | Concurrent threads |
 
+## Example
+
+The [`example/`](example/) folder contains a sample run on the Kimi *Attention Residuals* paper ([arXiv 2603.15031](https://arxiv.org/abs/2603.15031)), a 21-page double-column technical report.
+
+```
+example/
+  example.pdf               # source PDF
+  example_mineru/
+    example.md              # parsed by MinerU API
+  example_pymupdf/
+    example.md              # parsed by pymupdf4llm (before repair)
+```
+
+**Run it yourself:**
+
+```python
+from sub_skills.mineru import MinerUParser
+from sub_skills.mineru.config import load_config
+from sub_skills.pymupdf4llm import FallbackParser
+from pathlib import Path
+
+# MinerU
+result = MinerUParser(load_config()).parse(Path("example/example.pdf"), Path("example/example_mineru"))
+
+# pymupdf4llm
+result = FallbackParser().parse(Path("example/example.pdf"), Path("example/example_pymupdf"))
+```
+
+**Output comparison (first heading):**
+
+| | MinerU | pymupdf4llm |
+|---|---|---|
+| Title | `# TECHNICAL REPORT OF ATTENTION RESIDUALS` | `## ATTENTION RESIDUALS` |
+| Formula | `$h_l = \sum_i \alpha_{i \to l} v_i$` (LaTeX) | inline text fragments |
+| Images | not saved | not saved |
+
 ## Project Structure
 
 ```
